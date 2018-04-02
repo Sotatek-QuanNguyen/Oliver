@@ -1,0 +1,62 @@
+//Colors
+$background: #fefefe;
+$text: #4b507a;
+$cyan: #60daaa;
+$yellow: #fbca67;
+$orange: #ff8a30;
+$red: #f45e61;
+$purple: #6477b9;
+$blue: #0eb7da;
+
+* {
+  margin: 0; 
+  padding: 0; 
+}
+
+table { 
+  border-collapse: collapse; 
+  border-spacing: 0; 
+}
+
+#chessboard { 
+  padding: 0px; 
+  margin: 0 auto; 
+  border: 5px solid #181818;
+  border-collapse: separate; 
+  border-spacing: 5px;
+
+}
+
+body {
+  background-image: url("../imgs/cosmos.jpg");
+}
+
+
+#question_box {
+  border-style: solid;
+  border-color: coral;
+  display: none;
+}
+
+#chessboard tr td button { 
+  width: 60px; 
+  height: 60px;
+  background: #131544; 
+}
+
+#chessboard td button {
+  text-align: center;
+  color: white;
+  border: solid 5px #131544; 
+  clip-path: polygon( 
+    calc(0% + 5px) calc(0% + 5px), /* top left */
+    calc(100% - 5px) calc(0% + 5px), /* top right */
+    calc(100% - 5px) calc(100% - 5px), /* bottom right */
+    calc(0% + 5px) calc(100% - 5px) /* bottom left */
+  );
+  transition: clip-path 0.6s linear;
+}
+
+#chessboard button:hover {
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+} 
