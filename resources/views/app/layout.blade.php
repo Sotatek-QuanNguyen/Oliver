@@ -1,4 +1,3 @@
-<!doctype html>
 <html>
 <head>
     <meta charset="utf-8">
@@ -11,7 +10,7 @@
 </head>
 
 <body>
-<div class="container">
+<div class="container intro">
     @include('app.header')
     @yield('page_content')
     @include('app.footer')

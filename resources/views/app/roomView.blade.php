@@ -12,10 +12,17 @@
 @section('script')
 
  <script type="text/javascript">
-        var team1Key = "key1";
-        var team2Key = "key2";
-        var colNum = 6;
-        var rowNum = 6;
+        var ArrowEnum = {
+          UP:1,
+          DOWN:2,
+          RIGHT:3,
+          LEFT:4
+        }   
+        var currentTurn = 0;
+        var isStoped = false;     
+        var infoTeams = [{"teamName":"Red Oliver","likeColor":"#ff7373","teamKey":"key1"},{"teamName":"Blue Sky","likeColor":"#4286f4","teamKey":"key2"}];
+        var colNum = 7;
+        var rowNum = 7;
         var initVal = 0;
 
         var init2DArray = function (xlen, ylen, factoryFn) {
@@ -56,12 +63,20 @@
             }
         }
 
+        function cellIsValid(indexQuestion) {
+           var index = getCoordinates(indexQuestion);
+           return boards[index["row"]][index["col"]] == initVal;
+        }
+
         function tableText(tableCell) {
           var currentQuestion = $(tableCell).find("button")[0].innerText;
+          if (!cellIsValid(currentQuestion)) return;
+          isStoped = false;
           var random = Math.floor(Math.random() * count) + 0;
           //var quizRandom = data[random];
           var el = data[random];
           var result = el['right_answer'];
+          console.log(result);
             //alert(data[random]);\
           var answers = el['answers']['answers'];
           $("#question").text("Question "+currentQuestion+" : "+el['question']);
@@ -109,7 +124,21 @@
         }
 
 
+        configInfoTeam();
+
+
     });
+
+    function updateTeamStatus() {
+      var teamNames = $(".team_name");
+      for (i = 0; i < teamNames.length; i++ ) {
+        if (i == currentTurn) {
+          $(teamNames[i]).css({'font-size':"30px"});
+        }else {
+          $(teamNames[i]).css({'font-size':"20px"});
+        }
+      }
+    }
 
     function getCoordinates(index) {
           var col = (index - 1)%colNum;
@@ -118,16 +147,34 @@
        }
 
     function chooseAnswer(i, result, currentIndex) {
+
+          if (isStoped) return;
+          else {
+            isStoped = true;
+          }
           var answer = i + 1;
           if (answer == result) {
             $("#answer_"+i).css('color', 'red');
-            $("#"+currentIndex).css({"background":"#f4424e","border":"solid 5px #f4424e"});
-            updateBoards(currentIndex, team1Key);
+            $("#"+currentIndex).css({"background":infoTeams[currentTurn]["likeColor"],"border":"solid 5px "+infoTeams[currentTurn]["likeColor"]});
+            updateBoards(currentIndex, infoTeams[currentTurn]["teamKey"]);
             console.log('checkwin');
-            console.log(checkWinner(team1Key));
+            console.log(boards);
+            if (checkWinner(infoTeams[currentTurn]["teamKey"])) {
+              alert("Team "+infoTeams[currentTurn]["teamName"]+"Won !!! ");
+            }
           }else {
             $("#answer_"+i).css('color', 'blue');
+            nextTurn();
           }
+          updateTeamStatus();
+    }
+
+    function nextTurn() {
+      if (currentTurn < infoTeams.length - 1) {
+        currentTurn++;
+      }else {
+        currentTurn = 0;
+      }
     }
 
     function updateBoards(currentIndex , keyTeam) {
@@ -136,7 +183,7 @@
     } 
 
     function checkWinner(keyTeam) {
-      return checkWinnerByVertical(keyTeam);
+      return checkWinnerByVertical(keyTeam) || checkWinnerByHorizontal(keyTeam);  
     }
 
     function checkWinnerByVertical(keyTeam) {
@@ -148,15 +195,15 @@
           boardsTemporaryV[i][j] = boards[i][j];
         }
       }
-      
+        
       for (j = 0; j< colNum; j++) {
-        if (boards[0][j] == keyTeam) {
+        if (j != (colNum - 1) && boards[0][j] == keyTeam && boards[0][j+1] == keyTeam) {
           console.log("updateV");
-          if (findRoadByVertical(0,0,0, j, keyTeam,boardsTemporaryV)) return true;
+          if (findRoadByVertical(0, j+1, keyTeam,boardsTemporaryV, ArrowEnum.RIGHT)) return true;
+        }else if (boards[0][j] == keyTeam && boards[1][j] == keyTeam) {
+          if (findRoadByVertical(1, j, keyTeam,boardsTemporaryV, ArrowEnum.DOWN)) return true;
         }
       }
-
-      return false;
     }
 
     function checkWinnerByHorizontal(keyTeam) {
@@ -170,58 +217,62 @@
       }
       
       for (i = 0; i< rowNum; i++) {
-        if (boards[i][0] == keyTeam) {
-          console.log("updateH");
-          if (findRoadByHorizontal(i, 0, keyTeam,boardsTemporaryH)) return true;
+        if (i != (rowNum - 1) && boards[i][0] == keyTeam && boards[i+1][0] == keyTeam) {
+          console.log("updateV");
+          if (findRoadByHorizontal(i+1, 0, keyTeam,boardsTemporaryH, ArrowEnum.DOWN)) return true;
+        }else if (boards[i][0] == keyTeam && boards[i][1] == keyTeam) {
+          if (findRoadByHorizontal(i, 1, keyTeam,boardsTemporaryH, ArrowEnum.RIGHT)) return true;
         }
       }
-      return false;
     }
 
-    function findRoadByHorizontal(indexRow,indexCol,keyTeam, boardsTemporaryH) {
+    function findRoadByHorizontal(indexRow,indexCol,keyTeam, boardsTemporaryH, arrow) {
       //console.log(board);
       console.log('indexCol='+indexCol);
       if (indexCol == (colNum-1)) {
         return true;
       }
 
-      if (indexRow == (rowNum - 1) || indexRow == 0) return false;
-
-      if (boardsTemporaryH[indexRow][indexCol + 1] == keyTeam) {
-        boardsTemporaryH[indexRow][indexCol] = initVal;
-        return findRoadByHorizontal(indexRow, indexCol + 1, keyTeam, boardsTemporaryH);
-      }else if ((boardsTemporaryH[indexRow + 1][indexCol] == keyTeam)) {
-        boardsTemporaryH[indexRow][indexCol] = initVal;
-        return findRoadByHorizontal(indexRow + 1, indexCol, keyTeam, boardsTemporaryH);
-      }else if ((boardsTemporaryH[indexRow - 1][indexCol] == keyTeam)) {
-        boardsTemporaryH[indexRow][indexCol] = initVal;
-        return findRoadByHorizontal(indexRow - 1, indexCol, keyTeam, boardsTemporaryH);
+      if (indexCol != (colNum - 1) && boardsTemporaryH[indexRow][indexCol + 1] == keyTeam && arrow != ArrowEnum.LEFT && findRoadByHorizontal(indexRow, indexCol + 1, keyTeam, boardsTemporaryH, ArrowEnum.RIGHT)) {
+        return true;
+      }else if (indexCol != 0 && boardsTemporaryH[indexRow][indexCol - 1] == keyTeam && arrow !=  ArrowEnum.RIGHT && findRoadByHorizontal(indexRow, indexCol - 1, keyTeam, boardsTemporaryH, ArrowEnum.LEFT)) {  
+        return true;
+      }else if (indexRow != (colNum - 1) && boardsTemporaryH[indexRow + 1][indexCol] == keyTeam && arrow != ArrowEnum.UP && findRoadByHorizontal(indexRow + 1, indexCol, keyTeam, boardsTemporaryH, ArrowEnum.DOWN)) {     
+        return true;
+      }else if (indexRow !=0 && boardsTemporaryH[indexRow - 1][indexCol] == keyTeam  && arrow != ArrowEnum.DOWN && findRoadByHorizontal(indexRow - 1, indexCol, keyTeam, boardsTemporaryH, ArrowEnum.UP)) {     
+        return true;
+      }else { 
+        return false;
       }      
     }
 
-    function findRoadByVertical(priorRow, priorCol, indexRow, indexCol,keyTeam, boardsTemporaryV) {
+    function findRoadByVertical(indexRow, indexCol,keyTeam, boardsTemporaryV, arrow) {
       console.log('indexRow='+indexRow);
       if (indexRow == (rowNum - 1)) {
-        return true;
-      }
+        return true;  
+      } 
 
-      if (indexCol == (colNum - 1) || indexCol == 0) { 
-        boardsTemporaryV[priorRow][priorCol] = keyTeam;
-        return false;
-      }
-      if (boardsTemporaryV[indexRow][indexCol + 1] == keyTeam) {
-        boardsTemporaryV[indexRow][indexCol] = initVal;
-        return findRoadByVertical(indexRow,indexCol,indexRow, indexCol + 1, keyTeam, boardsTemporaryV);
-      }else if ((boardsTemporaryV[indexRow][indexCol - 1] == keyTeam)) {
-        boardsTemporaryV[indexRow][indexCol] = initVal;
-        return findRoadByVertical(indexRow,indexCol,indexRow, indexCol - 1, keyTeam, boardsTemporaryV);
-      }else if ((boardsTemporaryV[indexRow + 1][indexCol] == keyTeam)) {
-        boardsTemporaryV[indexRow][indexCol] = initVal;
-        return findRoadByVertical(indexRow,indexCol,indexRow + 1, indexCol, keyTeam, boardsTemporaryV);
-      }else {
-        boardsTemporaryV[priorRow][priorCol] = keyTeam;
+      if (indexCol != (colNum - 1) && boardsTemporaryV[indexRow][indexCol + 1] == keyTeam && arrow != ArrowEnum.LEFT && findRoadByVertical(indexRow, indexCol + 1, keyTeam, boardsTemporaryV, ArrowEnum.RIGHT)) {
+        return true;
+      }else if (indexCol != 0 && boardsTemporaryV[indexRow][indexCol - 1] == keyTeam && arrow !=  ArrowEnum.RIGHT && findRoadByVertical(indexRow, indexCol - 1, keyTeam, boardsTemporaryV, ArrowEnum.LEFT)) {  
+        return true;
+      }else if (indexRow != (colNum - 1) && boardsTemporaryV[indexRow + 1][indexCol] == keyTeam && arrow != ArrowEnum.UP && findRoadByVertical(indexRow + 1, indexCol, keyTeam, boardsTemporaryV, ArrowEnum.DOWN)) {     
+        return true;
+      }else if (indexRow !=0 && boardsTemporaryV[indexRow - 1][indexCol] == keyTeam  && arrow != ArrowEnum.DOWN && findRoadByVertical(indexRow - 1, indexCol, keyTeam, boardsTemporaryV, ArrowEnum.UP)) {     
+        return true;
+      }else { 
         return false;
       }      
+    }
+
+    function configInfoTeam() {
+        $($(".team_name")[0]).text(infoTeams[0]["teamName"]);
+        $($(".team_name")[1]).text(infoTeams[1]["teamName"]);
+        updateTeamStatus();
+    }
+
+    function updateScoreofTeam(teamIndex, score) {
+      $($(".team_score")[teamIndex]).text(score);
     }
 
   </script>
@@ -229,15 +280,19 @@
 @endsection
 
 @section('page_content')
-      <div class="container row">
-        <div class="col-sm-6">
-          <table id='chessboard'>
-          </table>
+      <div class="container">
+        <div class="row">
+          <div class="col-sm-6">
+            <table id='chessboard'>
+            </table>
+          </div>
+          <div class="col-sm-6">
+            @include('app.question_box')
+          </div>
         </div>
-        <div class="col-sm-6">
-          @include('app.question_box')
+        <br>
+        <div class="teams">
+          @include('app.teams_box')
         </div>
-          
-      
       </div>
 @endsection
