@@ -12,6 +12,12 @@ body {
 	text-align: center;
 }
 
+.team_score {
+	text-align: center;
+	font-size: 23px;
+	color: white;
+}
+
 .avatar_team img {
 	width: 120px;
 	height: auto;
@@ -20,6 +26,12 @@ body {
 .avatar_team {
 	display: none;
 	text-align: center;
+}
+
+.level {
+	width: 100%;
+    text-align: right;
+    padding: 8px 0;
 }
 
 #question_box {

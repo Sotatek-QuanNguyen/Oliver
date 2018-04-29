@@ -21,6 +21,13 @@
           RIGHT:3,
           LEFT:4
   }
+
+  const Level = {
+        EASY:"D",
+        MEDIUM:"TB",
+        HARD:"K"
+  }
+        var cycleTimes = 1;
         var currentTurn = 0;
         var isStoped = false;     
         var infoTeams = [];
@@ -29,7 +36,9 @@
         var initVal = 0;
         var initData;
         var currentQuestion;
-        var TEAMBOX = "<div class='team_box'> <div class='row'> <div class='col-centered'> <div class='avatar_team'> <img src='../imgs/chibi/chibi1.png'> </div> <p class='team_name'></p> </div></div> </div>"
+        var currentLevel;
+        const cycleTimeMax = 5;
+        var TEAMBOX = "<div class='team_box'> <div class='row'> <div class='col-centered'> <div class='avatar_team'> <img src='../imgs/chibi/chibi1.png'> </div> <p class='team_name'></p> <p class='team_score'>100</p> </div></div> </div>"
 
         var init2DArray = function (xlen, ylen, factoryFn) {
           var ret = []
@@ -52,7 +61,8 @@
             var teamName = info[i];
             var likeColor = getRandomColor(i);
             var teamKey = "teamI_" + i;
-            data.push({"teamName":teamName, "likeColor": likeColor, "teamKey":teamKey});
+            var teamScore = 0;
+            data.push({"teamName":teamName, "likeColor": likeColor, "teamKey":teamKey, "teamScore":teamScore});
           }
          return data;
         }
@@ -63,6 +73,9 @@
       }
 
     $(document).ready(function(){
+      Array.prototype.max = function() {
+        return Math.max.apply(null, this);
+      };
 
       $('body').css('color', 'black');
         var names = '<?php echo $infos ?>';
@@ -75,7 +88,7 @@
         for (var r=0; r<rowNum; r++) {
           var col = "";
           for (var c=0; c<colNum; c++) {
-            col += "<td><button id='"+space+"' class='draw'>"+space+"</button></td>";
+            col += "<td><button id='"+space+"' class='draw'>"+space+"<p class='level'>TB<p></button> </td>";
             space++; }
             $("#chessboard").append("<tr>"+col+"</tr>");
         }
@@ -121,16 +134,50 @@
           $("#answer_incorrect").css("display", "none");
           el.innerText = "Show Answer";
         }
+    }
 
-        
+    function generateLevel() {
+      var levels = $(".level");
+      for ( i = 0; i < levels.length; i++) {
+         const j = Math.floor(Math.random() * (10 + 1));
+         if (j%6 < 3) {
+          $(levels[i]).text('D');
+         }else if (j%6 < 5) {
+          $(levels[i]).text('TB');
+         }else {
+          $(levels[i]).text('K');
+         }
+      }
+    }
+
+    function checkWinByCycleTimes() {
+      if (cycleTimes == cycleTimeMax) {
+        var arr = [];
+        var messageText = "";
+        for (i = 0; i < infoTeams.length; i++) {
+            arr.push(infoTeams[i]['teamScore']);
+        }
+        var maxScore = arr.max();
+        var data = infoTeams.filter(function(item) { 
+              return item['teamScore'] == maxScore;
+        });
+
+        for (i = 0 ; i < data.length; i++) {
+          messageText = messageText + data[i]["teamName"] + " ";
+        }
+
+        debugger;
+        showAlert(messageText);
+      }
     }
 
     function handleRightAnswer(el) {
        $("#answer_"+i).css('color', 'red');
        play('correct');
+       infoTeams[currentTurn]["teamScore"] = parseInt(infoTeams[currentTurn]["teamScore"]) + parseScore();
           $("#"+currentQuestion).css({"background":infoTeams[currentTurn]["likeColor"],"border":"solid 5px "+infoTeams[currentTurn]["likeColor"]});
           updateBoards(infoTeams[currentTurn]["teamKey"]);
-      
+          
           if (checkWinner(infoTeams[currentTurn]["teamKey"])) {
             play('victory');
             showAlert(infoTeams[currentTurn]["teamName"]);
@@ -209,13 +256,16 @@
 
     function tableText(tableCell) {
       $("#description_answer").css({"display":"none"});
-   
-          currentQuestion = $(tableCell).find("button")[0].innerText;
+          var buttonCurrent = $(tableCell).find("button")[0];
+          currentQuestion = buttonCurrent.id;
+          currentLevel = $(buttonCurrent).find("p").first().text();
           if (!cellIsValid(currentQuestion)) return;
-          isStoped = false;
+          isStoped = false;   
 
-          
-          var el = getElementByArray(initData);
+          var el = getElementByArray(initData, currentLevel);
+          initData = initData.filter(function(item) { 
+              return item !== el;
+          })
           if (el['type'] == 'question') {
             $("#answers_box").css("display", "none");
             $("#show_answer").css("display", "block");
@@ -231,9 +281,21 @@
           }
         }
 
-    function getElementByArray(array) {
-    
-        return array.splice(0, 1)[0];
+    function getElementByArray(initData, level) {
+      var levelValue;
+      if (level == Level.EASY) {
+        levelValue = 1;
+      }else if (level == Level.MEDIUM) {
+        levelValue = 2;
+      }else {
+        levelValue = 3;
+      }
+
+      for(i = 0; i < initData.length; i++ ) {
+          if(initData[i]['level'] == levelValue) {
+            return initData[i];
+          }
+      }
     }
 
     function shuffle(a) {
@@ -248,8 +310,12 @@
     function updateTeamStatus() {
       var teamNames = $(".team_name");
       var avatarTeams = $(".avatar_team");
-      
+      var teamScores = $(".team_score");
       for (i = 0; i < teamNames.length; i++ ) {
+        var team = infoTeams.filter(function(item) { 
+              return item['teamName'] == teamNames[i].innerText;
+          })
+        $(teamScores[i]).text(team[0]["teamScore"]);
         if (i == currentTurn) {
           $(teamNames[i]).css({'font-size':"27px"});
           $(avatarTeams[i]).css({"opacity":"1.0"});
@@ -277,6 +343,7 @@
           if (answer == result) {
             play('correct');
             $("#answer_"+i).css('color', 'red');
+            infoTeams[currentTurn]["teamScore"] = parseInt(infoTeams[currentTurn]["teamScore"]) + parseScore(); 
             $("#"+currentQuestion).css({"background":infoTeams[currentTurn]["likeColor"],"border":"solid 5px "+infoTeams[currentTurn]["likeColor"]});
             $("descrition_answer").text("true");
             updateBoards(infoTeams[currentTurn]["teamKey"]);
@@ -292,12 +359,26 @@
           updateTeamStatus();
     }
 
+    function parseScore() {
+       var levelValue;
+      if (currentLevel == Level.EASY) {
+        levelValue = 1;
+      }else if (currentLevel == Level.MEDIUM) {
+        levelValue = 2;
+      }else {
+        levelValue = 3;
+      }
+      return levelValue;
+    }
+
     function nextTurn() {
       if (currentTurn < infoTeams.length - 1) {
         currentTurn++;
       }else {
         currentTurn = 0;
+        cycleTimes++;
       }
+      checkWinByCycleTimes();
     }
 
     function updateBoards(keyTeam) {
@@ -408,7 +489,8 @@
         $($(".team_name")[i]).css({"color":infoTeams[i]['likeColor']});
         $($(".avatar_team")[i]).find("img").attr("src",generateAvartar());
       }
-        updateTeamStatus();
+      generateLevel();
+      updateTeamStatus();
     }
 
     function play(id) {

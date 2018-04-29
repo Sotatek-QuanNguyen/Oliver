@@ -17,6 +17,7 @@ class CreateQuestionsTable extends Migration
             $table->increments('id');
             $table->enum('type', ['quizz','question']);
             $table->string('question', 1000)->nullable();
+            $table->string('level')->default('1.0');
             $table->string('answer', 500)->nullable();
             $table->timestamps();
         });

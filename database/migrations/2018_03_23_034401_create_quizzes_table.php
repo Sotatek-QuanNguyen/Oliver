@@ -18,6 +18,7 @@ class CreateQuizzesTable extends Migration
             $table->string('question', 1000)->default('');
             $table->enum('type', ['quizz','question']);
             $table->json('answers');
+            $table->string('level')->default('1.0');
             $table->integer('right_answer');
             $table->string('description_answer', 1500)->nullable();
             $table->timestamps();

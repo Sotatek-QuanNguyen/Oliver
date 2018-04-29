@@ -56,7 +56,7 @@ class RoomController extends AppBaseController
         foreach ($data as $element) {
                         $answers = json_encode([$element->a, $element->b, $element->c, $element->d]); 
 
-                        $insert[] = ['id' => $element->stt, 'question' => $element->cau_hoi, 'answers' => $answers , 'type' => 'quizz','right_answer' => $this->formatAnswer($element->dap_an), 'description_answer' => $element->giai_thich];
+                        $insert[] = ['id' => $element->stt, 'question' => $element->cau_hoi, 'answers' => $answers , 'type' => 'quizz','right_answer' => $this->formatAnswer($element->dap_an), 'description_answer' => $element->giai_thich, 'level' => $element->thang_diem];
         }
 
         if(!empty($insert)){
@@ -78,7 +78,7 @@ class RoomController extends AppBaseController
                     if (!is_null($element->cau_hoi)) {
                         $question = $element->cau_hoi;
                     }
-                        $insert[] = ['id' => $element->stt, 'question' => $question, 'answer' => $answer, 'type' => 'question'];
+                        $insert[] = ['id' => $element->stt, 'question' => $question, 'answer' => $answer, 'type' => 'question', 'level' => $element->thang_diem];
         }
 
         if(!empty($insert)){
