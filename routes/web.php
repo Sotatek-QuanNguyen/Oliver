@@ -11,6 +11,8 @@
 |
 */
 
-Route::get('/', 'RoomController@showRoomView')->name('room');
-
-
+Route::get('/room', 'RoomController@showRoomView')->name('room');
+Route::get('/', 'RoomController@showCreateView');
+Route::post('/into', 'RoomController@intoRoomView');
+Route::post('importExcel', 'RoomController@importExcel');
+Route::get('importExport', 'RoomController@importExport');

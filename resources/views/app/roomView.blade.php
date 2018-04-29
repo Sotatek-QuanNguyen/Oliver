@@ -3,27 +3,33 @@
 @section('title', 'Game room')
 
 @section('header')
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+  <script src="js/sweetalert.min.js"></script>
+  <script src="js/popper.min.js"></script>
+  <link type="text/css" rel="stylesheet" href="css/background1.css" /> 
+  <link type="text/css" rel="stylesheet" href="css/border_style.css" /> 
+  <script src="js/background1.js"></script>
+
   <meta name="viewport" content="width=device-width, initial-scale=1">
 @endsection
 
 @section('script')
 
- <script type="text/javascript">
-        var ArrowEnum = {
+ <script type="text/javascript"> 
+  const ArrowEnum = {
           UP:1,
           DOWN:2,
           RIGHT:3,
           LEFT:4
-        }   
+  }
         var currentTurn = 0;
         var isStoped = false;     
-        var infoTeams = [{"teamName":"Red Oliver","likeColor":"#ff7373","teamKey":"key1"},{"teamName":"Blue Sky","likeColor":"#4286f4","teamKey":"key2"}];
-        var colNum = 7;
-        var rowNum = 7;
+        var infoTeams = [];
+        var colNum = 6;
+        var rowNum = 6;
         var initVal = 0;
+        var initData;
+        var currentQuestion;
+        var TEAMBOX = "<div class='team_box'> <div class='row'> <div class='col-centered'> <div class='avatar_team'> <img src='../imgs/chibi/chibi1.png'> </div> <p class='team_name'></p> </div></div> </div>"
 
         var init2DArray = function (xlen, ylen, factoryFn) {
           var ret = []
@@ -39,11 +45,33 @@
        var boards = init2DArray(rowNum,colNum, function() {
         return initVal;
        });
+
+       function getData(info) {
+          var data = [];
+          for( i = 0; i<info.length; i++) {
+            var teamName = info[i];
+            var likeColor = getRandomColor(i);
+            var teamKey = "teamI_" + i;
+            data.push({"teamName":teamName, "likeColor": likeColor, "teamKey":teamKey});
+          }
+         return data;
+        }
+
+      function getRandomColor(index) {
+        var colors = ["#f49242","#b563d3","#a51d7f","#5fd33f","#c15124","#a80d08","#6bbc1a","#06891c","#1cdbc7","#04d2f2","#0a55d6","#b0a2db","#c48396"];
+        return colors[i];
+      }
+
     $(document).ready(function(){
 
+      $('body').css('color', 'black');
+        var names = '<?php echo $infos ?>';
+        infoTeams = getData(names.split(","));
         var space = 1;
-        var data = JSON.parse('<?php echo $quizzes ?>');
-        var count = {{count($quizzes)}};
+        var objects = <?php echo json_encode(array_merge($quizzes,$questions)) ?>;
+        colNum = <?php echo $size?>;
+        rowNum = <?php echo $size?>;
+        initData = shuffle(objects);
         for (var r=0; r<rowNum; r++) {
           var col = "";
           for (var c=0; c<colNum; c++) {
@@ -51,7 +79,6 @@
             space++; }
             $("#chessboard").append("<tr>"+col+"</tr>");
         }
-
 
         var table = document.getElementById("chessboard");
         if (table != null) {
@@ -62,24 +89,75 @@
                 };
             }
         }
+        $('#back-button').on('click', function(event) {
+            window.history.back();
+        });
 
-        function cellIsValid(indexQuestion) {
-           var index = getCoordinates(indexQuestion);
-           return boards[index["row"]][index["col"]] == initVal;
+        $('#answer_button').on('click', function(event) {
+            handleAnnswerBtn(this);
+        });
+
+        $('#answer_correct').on('click', function(event) {
+            handleRightAnswer(this);
+        });
+
+        $('#answer_incorrect').on('click', function(event) {
+            handleWrongAnswer(this);
+        });
+
+        configInfoTeam();
+
+    });
+
+    function handleAnnswerBtn(el) {
+        if(el.innerText == "Show Answer") {
+          $("#answer").css("display", "block");
+          $("#answer_correct").css("display", "block");
+          $("#answer_incorrect").css("display", "block");
+          el.innerText = "Hide Answer";
+        }else {
+          $("#answer").css("display", "none");
+          $("#answer_correct").css("display", "none");
+          $("#answer_incorrect").css("display", "none");
+          el.innerText = "Show Answer";
         }
 
-        function tableText(tableCell) {
-          var currentQuestion = $(tableCell).find("button")[0].innerText;
-          if (!cellIsValid(currentQuestion)) return;
-          isStoped = false;
-          var random = Math.floor(Math.random() * count) + 0;
-          //var quizRandom = data[random];
-          var el = data[random];
-          var result = el['right_answer'];
-          console.log(result);
+        
+    }
+
+    function handleRightAnswer(el) {
+       $("#answer_"+i).css('color', 'red');
+       play('correct');
+          $("#"+currentQuestion).css({"background":infoTeams[currentTurn]["likeColor"],"border":"solid 5px "+infoTeams[currentTurn]["likeColor"]});
+          updateBoards(infoTeams[currentTurn]["teamKey"]);
+      
+          if (checkWinner(infoTeams[currentTurn]["teamKey"])) {
+            play('victory');
+            showAlert(infoTeams[currentTurn]["teamName"]);
+          }
+          updateTeamStatus();
+    }
+
+    function handleWrongAnswer(el) {
+        play('fail');
+        $("#answer_"+i).css('color', 'blue');
+        nextTurn();
+        updateTeamStatus();
+    }
+
+    function cellIsValid(indexQuestion) {
+           var index = getCoordinates(indexQuestion);
+           return boards[index["row"]][index["col"]] == initVal;
+    }
+
+    function configQuizzBox(el) {
+      var result = el['right_answer'];
+
             //alert(data[random]);\
-          var answers = el['answers']['answers'];
+            
+          var answers = el['answers'];
           $("#question").text("Question "+currentQuestion+" : "+el['question']);
+          $("#description_answer").text("Explain the answer:" +el['description_answer']);
           $("#table_body").empty();
           for (i = 0; i < answers.length; i++) {
             switch (i) {
@@ -112,30 +190,73 @@
           for (i = 0; i < answers.length; i++) {
             if (i%2 == 0) {
               if (typeof answers[i+1] === "undefined") {
-                $("#table_body").append("<tr><td><p id= 'answer_"+i+"' onclick = 'chooseAnswer("+i+","+result+","+currentQuestion+")'>"+answers[i]+"</p></td></tr>");
+                $("#table_body").append("<tr><td><p id= 'answer_"+i+"' onclick = 'chooseAnswer("+i+","+result+")'>"+answers[i]+"</p></td></tr>");
               } else {
-                $("#table_body").append("<tr><td><p id= 'answer_"+i+"' onclick = 'chooseAnswer("+i+","+result+","+currentQuestion+")'>"+answers[i]+"</p></td><td><p id= 'answer_"+(i+1)+"' onclick = 'chooseAnswer("+(i+1)+","+result+","+currentQuestion+")'>"+answers[i+1]+"</p></td></tr>");
+                $("#table_body").append("<tr><td><p id= 'answer_"+i+"' onclick = 'chooseAnswer("+i+","+result+")'>"+answers[i]+"</p></td><td><p id= 'answer_"+(i+1)+"' onclick = 'chooseAnswer("+(i+1)+","+result+")'>"+answers[i+1]+"</p></td></tr>");
               }
             }
           }
 
            $("#question_box").css("display", "block");
 
+   
+    }
+
+    function configQuestionBox(el) {
+       $("#question").text("Question "+currentQuestion+" : "+el['question']);
+       $("#answer").text("Answer : "+el['answer']);
+    }
+
+    function tableText(tableCell) {
+      $("#description_answer").css({"display":"none"});
+   
+          currentQuestion = $(tableCell).find("button")[0].innerText;
+          if (!cellIsValid(currentQuestion)) return;
+          isStoped = false;
+
+          
+          var el = getElementByArray(initData);
+          if (el['type'] == 'question') {
+            $("#answers_box").css("display", "none");
+            $("#show_answer").css("display", "block");
+            configQuestionBox(el);
+            $("#answer").css("display", "none");
+            $("#answer_correct").css("display", "none");
+            $("#answer_incorrect").css("display", "none");
+            $("#answer_button").innerText = "Show Answer";
+          }else {
+            $("#answers_box").css("display", "block");
+            $("#show_answer").css("display", "none");            
+            configQuizzBox(el);
+          }
         }
 
+    function getElementByArray(array) {
+    
+        return array.splice(0, 1)[0];
+    }
 
-        configInfoTeam();
+    function shuffle(a) {
+      for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
 
-
-    });
 
     function updateTeamStatus() {
       var teamNames = $(".team_name");
+      var avatarTeams = $(".avatar_team");
+      
       for (i = 0; i < teamNames.length; i++ ) {
         if (i == currentTurn) {
-          $(teamNames[i]).css({'font-size':"30px"});
+          $(teamNames[i]).css({'font-size':"27px"});
+          $(avatarTeams[i]).css({"opacity":"1.0"});
+       
         }else {
           $(teamNames[i]).css({'font-size':"20px"});
+          $(avatarTeams[i]).css({"opacity":"0.4"});
         }
       }
     }
@@ -146,23 +267,25 @@
           return {"row":row, "col":col};
        }
 
-    function chooseAnswer(i, result, currentIndex) {
-
+    function chooseAnswer(i, result) {
+          $("#description_answer").css({"display":"block"});
           if (isStoped) return;
           else {
             isStoped = true;
           }
           var answer = i + 1;
           if (answer == result) {
+            play('correct');
             $("#answer_"+i).css('color', 'red');
-            $("#"+currentIndex).css({"background":infoTeams[currentTurn]["likeColor"],"border":"solid 5px "+infoTeams[currentTurn]["likeColor"]});
-            updateBoards(currentIndex, infoTeams[currentTurn]["teamKey"]);
-            console.log('checkwin');
-            console.log(boards);
+            $("#"+currentQuestion).css({"background":infoTeams[currentTurn]["likeColor"],"border":"solid 5px "+infoTeams[currentTurn]["likeColor"]});
+            $("descrition_answer").text("true");
+            updateBoards(infoTeams[currentTurn]["teamKey"]);
             if (checkWinner(infoTeams[currentTurn]["teamKey"])) {
-              alert("Team "+infoTeams[currentTurn]["teamName"]+"Won !!! ");
+              //alert("Team "+infoTeams[currentTurn]["teamName"]+"Won !!! ");
+              showAlert(infoTeams[currentTurn]["teamName"]);
             }
           }else {
+            play('fail');
             $("#answer_"+i).css('color', 'blue');
             nextTurn();
           }
@@ -177,8 +300,8 @@
       }
     }
 
-    function updateBoards(currentIndex , keyTeam) {
-      var index = getCoordinates(currentIndex);
+    function updateBoards(keyTeam) {
+      var index = getCoordinates(currentQuestion);
       boards[index["row"]][index["col"]] = keyTeam;
     } 
 
@@ -198,7 +321,7 @@
         
       for (j = 0; j< colNum; j++) {
         if (j != (colNum - 1) && boards[0][j] == keyTeam && boards[0][j+1] == keyTeam) {
-          console.log("updateV");
+       
           if (findRoadByVertical(0, j+1, keyTeam,boardsTemporaryV, ArrowEnum.RIGHT)) return true;
         }else if (boards[0][j] == keyTeam && boards[1][j] == keyTeam) {
           if (findRoadByVertical(1, j, keyTeam,boardsTemporaryV, ArrowEnum.DOWN)) return true;
@@ -218,7 +341,7 @@
       
       for (i = 0; i< rowNum; i++) {
         if (i != (rowNum - 1) && boards[i][0] == keyTeam && boards[i+1][0] == keyTeam) {
-          console.log("updateV");
+      
           if (findRoadByHorizontal(i+1, 0, keyTeam,boardsTemporaryH, ArrowEnum.DOWN)) return true;
         }else if (boards[i][0] == keyTeam && boards[i][1] == keyTeam) {
           if (findRoadByHorizontal(i, 1, keyTeam,boardsTemporaryH, ArrowEnum.RIGHT)) return true;
@@ -227,8 +350,7 @@
     }
 
     function findRoadByHorizontal(indexRow,indexCol,keyTeam, boardsTemporaryH, arrow) {
-      //console.log(board);
-      console.log('indexCol='+indexCol);
+    
       if (indexCol == (colNum-1)) {
         return true;
       }
@@ -247,7 +369,7 @@
     }
 
     function findRoadByVertical(indexRow, indexCol,keyTeam, boardsTemporaryV, arrow) {
-      console.log('indexRow='+indexRow);
+    
       if (indexRow == (rowNum - 1)) {
         return true;  
       } 
@@ -265,14 +387,38 @@
       }      
     }
 
+    function generateAvartar() {
+      var i = Math.floor(Math.random() * 10);  
+     
+      return "../imgs/chibi/chibi"+i+".png";
+    }
+
+    function createLayoutTeams() {
+        var teams = $(".teams");
+       for (i = 0; i < infoTeams.length; i++) {
+            $(teams[i%2]).append(TEAMBOX);
+       }
+    }
+
     function configInfoTeam() {
-        $($(".team_name")[0]).text(infoTeams[0]["teamName"]);
-        $($(".team_name")[1]).text(infoTeams[1]["teamName"]);
+      createLayoutTeams();  
+      for (i = 0; i < infoTeams.length; i++) {
+        $($(".team_name")[i]).text(infoTeams[i]["teamName"]);
+        $($(".avatar_team")[i]).css({"display":"block"});
+        $($(".team_name")[i]).css({"color":infoTeams[i]['likeColor']});
+        $($(".avatar_team")[i]).find("img").attr("src",generateAvartar());
+      }
         updateTeamStatus();
     }
 
-    function updateScoreofTeam(teamIndex, score) {
-      $($(".team_score")[teamIndex]).text(score);
+    function play(id) {
+      var audio = document.getElementById(id);
+          audio.currentTime = 0
+          audio.play();
+    }
+
+    function showAlert(teamWin) {
+        swal("Congratulations!", "Team "+teamWin+" Won !!!");
     }
 
   </script>
@@ -280,19 +426,36 @@
 @endsection
 
 @section('page_content')
-      <div class="container">
-        <div class="row">
-          <div class="col-sm-6">
-            <table id='chessboard'>
-            </table>
-          </div>
-          <div class="col-sm-6">
-            @include('app.question_box')
-          </div>
-        </div>
-        <br>
-        <div class="teams">
-          @include('app.teams_box')
-        </div>
+      <div class="background">
+           <div id="particles-js"></div>
       </div>
+      <div class="container">
+        <div class="mainView">
+            <div class="row">
+              <div class="col-3">
+                <div class="teams"></div>
+              </div>
+
+              <div class="col-6">
+                <table id='chessboard'></table>
+              </div>
+
+              <div class="col-3">
+                <div class="teams"></div>
+              </div>
+
+            </div>
+            <br>
+            <div class="row">
+              <div class="col-12">
+                 @include('app.question_box')
+              </div>
+            </div>
+            </div>  
+        </div>
+       <audio id="victory" src="../sounds/victory.mp3" preload="auto"></audio>
+       <audio id="correct" src="../sounds/correct.mp3" preload="auto"></audio>
+       <audio id="fail" src="../sounds/fail.mp3" preload="auto"></audio>
+      
+      
 @endsection

@@ -13,7 +13,7 @@ class QuizzesTableSeeder extends Seeder
     {
         //
         $faker = Faker::create();
-        $QUIZ_COUNT = 100;
+        $QUIZ_COUNT = 300;
         $quizzes = [];
 
         for($i = 1; $i <= $QUIZ_COUNT; $i++) {
@@ -21,7 +21,8 @@ class QuizzesTableSeeder extends Seeder
         		'id'			=> $i,
         		'question'		=> $faker->text(400),
         		'answers'		=> json_encode(['answers' => $faker->sentences($nb = 4, $asText = false)]),
-        		'right_answer' 	=> $faker->numberBetween($min = 1, $max = 4)  
+        		'right_answer' 	=> $faker->numberBetween($min = 1, $max = 4),
+                'type'          => 'quizz'
         	];
         }
 

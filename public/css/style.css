@@ -27,16 +27,22 @@ table {
 
 }
 
-body {
-  background-image: url("../imgs/cosmos.jpg");
+.boxed-grey {
+  padding: 20px;
 }
 
 
-#question_box {
-  border-style: solid;
-  border-color: coral;
-  display: none;
+.col-centered{
+    float: none;
+    margin: 0 auto;
 }
+
+#answer,#answer_correct,#answer_incorrect {
+  display: none;  
+}
+
+
+
 
 #chessboard tr td button { 
   width: 60px; 
@@ -60,3 +66,36 @@ body {
 #chessboard button:hover {
   clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
 } 
+//Create View
+#particles-js{
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: 50% 50%;
+    position: fixed;
+    top: 0px;
+    z-index:1;
+}
+.container h2 {
+  color: white;
+}
+
+#login-box button.btn-custom {
+  border-radius: 2px;
+  margin-top: 8px;
+  margin: auto;
+  width: 25%;
+  background:#ff5252;
+  border-color: rgba(48, 46, 45, 1);
+  color: white;
+  font-family: 'Nunito', sans-serif;
+}
+#login-box button.btn-custom:hover{
+  -webkit-transition: all 500ms ease;
+  -moz-transition: all 500ms ease;
+  -ms-transition: all 500ms ease;
+  -o-transition: all 500ms ease;
+  transition: all 500ms ease;
+  background: rgba(48, 46, 45, 1);
+  border-color: #ff5252;
+}

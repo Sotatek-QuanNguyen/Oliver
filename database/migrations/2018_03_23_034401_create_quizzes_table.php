@@ -15,9 +15,11 @@ class CreateQuizzesTable extends Migration
     {
         Schema::create('quizzes', function (Blueprint $table) {
             $table->increments('id');
-            $table->string('question', 1000);
+            $table->string('question', 1000)->default('');
+            $table->enum('type', ['quizz','question']);
             $table->json('answers');
             $table->integer('right_answer');
+            $table->string('description_answer', 1500)->nullable();
             $table->timestamps();
         });
     }
